@@ -8,7 +8,7 @@ import express from "express";
 import cors from "cors";
 import { Server, Socket } from "socket.io";
 
-import type { Role, User, Room, JoinRoomPayload, SeekPayload, ChangeVideoPayload } from "./types.js";
+import type { Role, User, Room, JoinRoomPayload, SeekPayload, ChangeVideoPayload, RateChangePayload } from "./types.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -52,7 +52,8 @@ io.on("connection", (socket: Socket) => {
         videoState: {  // default video state
           videoId: "dQw4w9WgXcQ",  // rickroll
           isPlaying: false,
-          currentTime: 0
+          currentTime: 0,
+          playbackRate: 1
         }
       };
       rooms.set(roomId, room);
@@ -78,18 +79,20 @@ io.on("connection", (socket: Socket) => {
     console.log(`${username} (${socket.id}) joined room ${roomId} as ${assignedRole}`);
   });
 
-  socket.on("play", () => {
+  socket.on("play", ({ time }: { time: number }) => {
     const data = getRoomAndUser(socket.id);
     if (!data || !hasControlPermissions(data.user.role)) return;  // reject if no permission
     data.room.videoState.isPlaying = true;
-    socket.to(data.room.roomId).emit("play");  // broadcast to everyone else
+    data.room.videoState.currentTime = time;  // save current time
+    socket.to(data.room.roomId).emit("play", { time });  // broadcast to everyone else
   });
 
-  socket.on("pause", () => {
+  socket.on("pause", ({ time }: { time: number }) => {
     const data = getRoomAndUser(socket.id);
     if (!data || !hasControlPermissions(data.user.role)) return;
     data.room.videoState.isPlaying = false;
-    socket.to(data.room.roomId).emit("pause"); 
+    data.room.videoState.currentTime = time;  // save exact pause time
+    socket.to(data.room.roomId).emit("pause", { time });
   });
 
   socket.on("seek", ({ time }: SeekPayload) => {
@@ -105,9 +108,17 @@ io.on("connection", (socket: Socket) => {
     data.room.videoState = {  // reset state for new video
       videoId,
       isPlaying: true,  // auto-play new video
-      currentTime: 0
+      currentTime: 0,
+      playbackRate: 1
     };
     io.in(data.room.roomId).emit("change_video", { videoId });  // broadcast to everyone including person who changed it, so all clients update their ui simultaneously
+  });
+
+  socket.on("rate_change", ({ rate }: RateChangePayload) => {
+    const data = getRoomAndUser(socket.id);
+    if (!data || !hasControlPermissions(data.user.role)) return;
+    data.room.videoState.playbackRate = rate;
+    socket.to(data.room.roomId).emit("rate_change", { rate });
   });
 
   socket.on("disconnect", () => {  // leave room

@@ -13,7 +13,8 @@ interface Room {
     videoId: string;  // yt video id
     isPlaying: boolean;
     currentTime: number;
-  }
+    playbackRate: number;
+  };
 }
 
 interface JoinRoomPayload {
@@ -33,4 +34,8 @@ interface ChangeVideoPayload {
   videoId: string;
 }
 
-export type { Role, User, Room, JoinRoomPayload, LeaveRoomPayload, SeekPayload, ChangeVideoPayload };
+interface RateChangePayload {
+  rate: number;
+}
+
+export type { Role, User, Room, JoinRoomPayload, LeaveRoomPayload, SeekPayload, ChangeVideoPayload, RateChangePayload };
