@@ -38,4 +38,12 @@ interface RateChangePayload {
   rate: number;
 }
 
-export type { Role, User, Room, JoinRoomPayload, LeaveRoomPayload, SeekPayload, ChangeVideoPayload, RateChangePayload };
+interface ChatMessage {
+  id: string;
+  userId: string;
+  username: string;
+  text: string;
+  timestamp: number;
+}
+
+export type { Role, User, Room, JoinRoomPayload, LeaveRoomPayload, SeekPayload, ChangeVideoPayload, RateChangePayload, ChatMessage };

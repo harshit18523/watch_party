@@ -1,11 +1,11 @@
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
-import { PlaySquare, Users } from "lucide-react";
+import { Users } from "lucide-react";
 
 import type { Role, RoomState, User } from "../types";
 import { socket } from "../socket";
 import VideoPlayer from "../components/VideoPlayer";
-
+import Chat from "../components/Chat";
 
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -82,79 +82,96 @@ export default function Room() {
   if (!room) return (<div className="text-white text-center mt-20">Loading room data...</div>);
 
   return (
-    <div className="min-h-screen p-8 max-w-6xl mx-auto flex flex-col md:flex-row gap-6">
-      {/* Main Video Area */}
-      <div className="flex-1 bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <PlaySquare className="text-red-500" /> Room: {room.roomId}
-          </h2>
-          <span className="px-3 py-1 bg-blue-600 text-sm font-semibold rounded-full">
-            Your Role: {room.role}
-          </span>
-        </div>
-
-        <VideoPlayer socket={socket} room={room} />
-      </div>
-
-      {/* Sidebar: Participants */}
-      <div className="w-full md:w-80 bg-gray-800 rounded-xl p-4 border border-gray-700 h-fit">
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Users size={20} /> Participants ({room.participants.length})
-        </h3>
-        <ul className="space-y-2">
-          {room.participants.map(p => (
-            <li key={p.userId} className="flex flex-col p-3 bg-gray-700 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">
-                  {p.username} {p.userId === socket.id ? '(You)' : ''}
-                </span>
-                <span className={`text-xs px-2 py-1 rounded font-bold ${p.role === 'Host' ? 'bg-yellow-600' :
-                  p.role === 'Moderator' ? 'bg-green-600' : 'bg-gray-500'
-                  }`}>
-                  {p.role}
-                </span>
-              </div>
-
-              {/* Host Controls: Only show if I am the Host, and I am not looking at myself */}
-              {room.role === 'Host' && p.userId !== socket.id && (
-                <div className="flex gap-2 mt-3 pt-2 border-t border-gray-600">
-                  <button
-                    onClick={() => handleToggleModerator(p.userId, p.role)}
-                    className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition-colors"
-                  >
-                    {p.role === 'Moderator' ? 'Revoke Mod' : 'Make Mod'}
-                  </button>
-                  <button
-                    onClick={() => handleKickUser(p.userId)}
-                    className="text-xs bg-red-600 hover:bg-red-700 px-3 py-1 rounded transition-colors"
-                  >
-                    Kick User
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-
-        {/* EXIT CONTROLS */}
-        <div className="mt-auto border-t border-gray-700 pt-4 flex flex-col gap-2">
-          <button
+    <div className="h-screen max-h-screen overflow-hidden bg-gray-900 text-white flex flex-col">
+      
+      {/* 1. TOP NAV BAR: Room Name & Exit Controls */}
+      <header className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center shrink-0 shadow-md z-10">
+        <h1 className="font-bold text-xl flex items-center gap-2">
+          <span className="text-blue-500">▶</span> Watch Party: {room.roomId}
+        </h1>
+        
+        <div className="flex gap-3">
+          <button 
             onClick={handleLeaveRoom}
-            className="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors border border-gray-600"
           >
             Leave Room
           </button>
-
+          
           {room.role === 'Host' && (
-            <button
+            <button 
               onClick={handleDeleteRoom}
-              className="w-full bg-red-600/80 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors border border-red-500"
+              className="bg-red-600/80 hover:bg-red-600 text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors border border-red-500"
             >
-              End Watch Party
+              End Party
             </button>
           )}
         </div>
+      </header>
+
+      {/* 2. MAIN CONTENT AREA: 3-Column Layout */}
+      <div className="flex-1 overflow-hidden p-4 flex flex-col lg:flex-row gap-4">
+        
+        {/* COLUMN 1: Participants Sidebar (Left) */}
+        <div className="w-full lg:w-64 h-full bg-gray-800 rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-2xl shrink-0">
+          <div className="p-4 border-b border-gray-700 bg-gray-900/50 shrink-0">
+            <h3 className="font-semibold flex items-center gap-2 text-gray-200">
+              <Users size={18} className="text-blue-400" /> Participants ({room.participants.length})
+            </h3>
+          </div>
+          
+          <ul className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+            {room.participants.map(p => (
+              <li key={p.userId} className="flex flex-col p-2.5 bg-gray-700/50 border border-gray-600/50 rounded-lg text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium truncate mr-2">
+                    {p.username} {p.userId === socket.id ? <span className="text-gray-400 font-normal">(You)</span> : ''}
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold tracking-wider uppercase ${
+                    p.role === 'Host' ? 'bg-yellow-600/20 text-yellow-500 border border-yellow-600/50' : 
+                    p.role === 'Moderator' ? 'bg-green-600/20 text-green-400 border border-green-600/50' : 
+                    'bg-gray-600/50 text-gray-300 border border-gray-500/50'
+                  }`}>
+                    {p.role}
+                  </span>
+                </div>
+
+                {/* Host Controls for Moderation */}
+                {room.role === 'Host' && p.userId !== socket.id && (
+                  <div className="flex gap-2 mt-3 pt-2 border-t border-gray-600/50">
+                    <button 
+                      onClick={() => handleToggleModerator(p.userId, p.role)}
+                      className="flex-1 text-[10px] bg-blue-600/80 hover:bg-blue-600 py-1 rounded transition-colors"
+                    >
+                      {p.role === 'Moderator' ? 'Revoke Mod' : 'Make Mod'}
+                    </button>
+                    <button 
+                      onClick={() => handleKickUser(p.userId)}
+                      className="flex-1 text-[10px] bg-red-600/80 hover:bg-red-600 py-1 rounded transition-colors"
+                    >
+                      Kick
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* COLUMN 2: Video Player (Center) */}
+        {/* We use flex-1 here so the video always takes up the maximum remaining space */}
+        <div className="flex-1 h-full rounded-xl overflow-hidden shadow-2xl bg-black min-w-[320px] border border-gray-700">
+          <VideoPlayer socket={socket} room={room} />
+        </div>
+
+        {/* COLUMN 3: Chat Sidebar (Right) */}
+        <div className="w-full lg:w-80 h-full bg-gray-800 rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-2xl shrink-0">
+          <div className="p-4 border-b border-gray-700 bg-gray-900/50 shrink-0">
+            <h3 className="font-semibold text-gray-200">Live Chat</h3>
+          </div>
+          <Chat socket={socket} />
+        </div>
+
       </div>
     </div>
   );

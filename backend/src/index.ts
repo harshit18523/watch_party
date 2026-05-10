@@ -8,7 +8,7 @@ import express from "express";
 import cors from "cors";
 import { Server, Socket } from "socket.io";
 
-import type { Role, User, Room, JoinRoomPayload, SeekPayload, ChangeVideoPayload, RateChangePayload } from "./types.js";
+import type { Role, User, Room, JoinRoomPayload, SeekPayload, ChangeVideoPayload, RateChangePayload, ChatMessage } from "./types.js";
 import { join } from "path";
 
 const app = express();
@@ -178,6 +178,19 @@ io.on("connection", (socket: Socket) => {
     data.room.videoState.playbackRate = state.rate;
     socket.to(data.room.roomId).emit("host_heartbeat", state);  // broadcast host's exact reality to everyone else
     // console.log("host pulse received");
+  });
+
+  socket.on("send_message", ({ text }: { text: string }) => {
+    const data = getRoomAndUser(socket.id);
+    if (!data) return;
+    const message: ChatMessage = {  // construct message object
+      id: Math.random().toString(36).substring(2, 9),  // simple unique id
+      userId: data.user.userId,
+      username: data.user.username,
+      text,
+      timestamp: Date.now()
+    };
+    io.in(data.room.roomId).emit("recieve_message", message);  // broadcast to everyone in room including the sender, so their ui updates
   });
 
   socket.on("leave_room", () => {

@@ -20,4 +20,12 @@ interface RoomState {
   videoState: VideoState;
 }
 
-export type { Role, User, VideoState, RoomState };
+interface ChatMessage {
+  id: string;  // unique id for react rendering
+  userId: string;
+  username: string;
+  text: string;
+  timestamp: number;
+}
+
+export type { Role, User, VideoState, RoomState, ChatMessage };
