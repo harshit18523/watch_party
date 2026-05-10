@@ -15,6 +15,7 @@ export default function VideoPlayer({ socket, room }: VideoPlayerProps) {
   const [currentVideoId, setCurrentVideoId] = useState<string>(room.videoState.videoId);
   const [videoInput, setVideoInput] = useState<string>("");
   const isSyncing = useRef<boolean>(false);  // prevents infinite loops when socket updates player
+  const isInitialLoad = useRef<boolean>(true);
 
   const hasControl = room.role === "Host" || room.role === "Moderator";  // check if current user has permission to control video
 
@@ -60,16 +61,59 @@ export default function VideoPlayer({ socket, room }: VideoPlayerProps) {
     };
   }, [socket]);
 
+  useEffect(() => {  // 1. host pulse: emit state every 3 seconds
+    if (room.role !== "Host") return;
+    const interval = setInterval(() => {
+      if (playerRef.current && typeof playerRef.current.getPlayerState === "function") {
+        socket.emit("sync_heartbeat", {
+          time: playerRef.current.getCurrentTime(),
+          isPlaying: playerRef.current.getPlayerState() === 1, // 1 is yt's code for 'playing'
+          rate: playerRef.current.getPlaybackRate() || 1
+        });
+        // console.log("host pulse emitted");
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [room.role, socket]);
+
+  useEffect(() => {  // 2. participant correction: listen and snap to host
+    socket.on("host_heartbeat", (hostState: { time: number, isPlaying: boolean, rate: number }) => {
+      if (hasControl || !playerRef.current || typeof playerRef.current.getPlayerState !== "function") return;  // ignore if i am host/mod, or if my player hasn't loaded yet
+      const myTime = playerRef.current.getCurrentTime();
+      const myState = playerRef.current.getPlayerState();
+      if (Math.abs(hostState.time - myTime) > 6) {  // drift correction: if i am off by more than 6 seconds, force a seek
+        playerRef.current.seekTo(hostState.time, true);
+        console.log("Drift corrected");
+      }
+      const iAmPlaying = myState === 1;  // state correction: if host is playing and i am paused (or vice versa), fix it
+      if (hostState.isPlaying && !iAmPlaying) {
+        playerRef.current.playVideo();
+      } else if (!hostState.isPlaying && iAmPlaying) {
+        playerRef.current.pauseVideo();
+      }
+      if (playerRef.current.getPlaybackRate() !== hostState.rate) {  // speed correction: ensure playback rates match
+        playerRef.current.setPlaybackRate(hostState.rate);
+        console.log("speed corrected");
+      }
+    });
+    return () => {
+      socket.off("host_heartbeat");
+    };
+  }, [socket, hasControl]);
+
   const onReady = (event: YouTubeEvent) => {
     playerRef.current = event.target;
-    if (room.videoState.currentTime > 0) {  // jump to current time if we joined late
-      event.target.seekTo(room.videoState.currentTime, true);
-    }
-    event.target.setPlaybackRate(room.videoState.playbackRate || 1);  // catch up to current speed
-    if (room.videoState.isPlaying) {  // explicitly check state and force play or pause
-      event.target.playVideo();
-    } else {
-      event.target.pauseVideo();
+    if (isInitialLoad.current) {  // only attempt to sync if room actually had video when we joined
+      if (room.videoState.videoId !== '') {
+        if (room.videoState.currentTime > 0) {  // catch up to existing video's time
+          event.target.seekTo(room.videoState.currentTime, true);
+        }
+        event.target.setPlaybackRate(room.videoState.playbackRate || 1);
+        if (room.videoState.isPlaying) {  // if room is playing, force it to play. if its paused, do nothing. api naturally cues it on load.
+          event.target.playVideo();
+        }
+      }  // notice we removed else block entirely. when video changes, autoplay: 0 ensures it starts queued and paused
+      isInitialLoad.current = false;
     }
   };
 
@@ -123,36 +167,54 @@ export default function VideoPlayer({ socket, room }: VideoPlayerProps) {
 
   return (
     <div className="flex flex-col h-full w-full">
+      {/* The Video Container */}
       <div 
-        className="w-full aspect-video bg-black rounded-lg overflow-hidden relative"
+        className="w-full aspect-video bg-black rounded-lg overflow-hidden relative flex items-center justify-center border border-gray-700"
         style={{ pointerEvents }} 
       >
-        <YouTube
-          videoId={currentVideoId}
-          onReady={onReady}
-          onPlay={onPlay}
-          onPause={onPause}
-          onStateChange={onStateChange}
-          onPlaybackRateChange={onRateChange}
-          opts={{
-            width: '100%',
-            height: '100%',
-            playerVars: {
-              autoplay: 0,
-              controls: hasControl ? 1 : 0, 
-              disablekb: hasControl ? 0 : 1, 
-            },
-          }}
-          className="absolute top-0 left-0 w-full h-full"
-        />
-        
-        {!hasControl && (
-          <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded text-sm text-gray-300">
-            Watch-Only Mode (Waiting for Host)
+        {currentVideoId ? (
+          // IF A VIDEO EXISTS: Show the YouTube Player
+          <>
+            <YouTube
+              videoId={currentVideoId}
+              onReady={onReady}
+              onPlay={onPlay}
+              onPause={onPause}
+              onStateChange={onStateChange}
+              onPlaybackRateChange={onRateChange}
+              opts={{
+                width: '100%',
+                height: '100%',
+                playerVars: {
+                  autoplay: 0,
+                  controls: 1, 
+                  disablekb: 0, 
+                },
+              }}
+              className="absolute top-0 left-0 w-full h-full"
+            />
+            
+            {!hasControl && (
+              <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded text-sm text-gray-300">
+                Watch-Only Mode (Waiting for Host)
+              </div>
+            )}
+          </>
+        ) : (
+          // IF NO VIDEO EXISTS: Show the Placeholder Message
+          <div className="text-gray-400 text-center p-6">
+            <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p className="text-xl font-semibold mb-2 text-white">No Video Selected</p>
+            <p className="text-sm">
+              {hasControl 
+                ? "Paste a YouTube URL below to start the Watch Party." 
+                : "Waiting for the Host to choose a video..."}
+            </p>
           </div>
         )}
       </div>
 
+      {/* Change Video Controls (Host/Mod Only) */}
       {hasControl && (
         <form onSubmit={handleChangeVideo} className="mt-4 flex gap-2">
           <input
@@ -166,7 +228,7 @@ export default function VideoPlayer({ socket, room }: VideoPlayerProps) {
             type="submit"
             className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors"
           >
-            <Search size={18} /> Change Video
+            <Search size={18} /> {currentVideoId ? 'Change Video' : 'Load Video'}
           </button>
         </form>
       )}

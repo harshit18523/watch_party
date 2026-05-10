@@ -9,6 +9,7 @@ import cors from "cors";
 import { Server, Socket } from "socket.io";
 
 import type { Role, User, Room, JoinRoomPayload, SeekPayload, ChangeVideoPayload, RateChangePayload } from "./types.js";
+import { join } from "path";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -41,42 +42,57 @@ function hasControlPermissions(role: Role): boolean {
 io.on("connection", (socket: Socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  socket.on("join_room", ({ roomId, username }: JoinRoomPayload) => {  // join room
-    let room = rooms.get(roomId);
-    let assignedRole: Role = "Participant";
-    if (!room) { // 1. check if room exists
-      assignedRole = "Host"; // 2. first user becomes host
-      room = {
-        roomId,
-        participants: [],
-        videoState: {  // default video state
-          videoId: "dQw4w9WgXcQ",  // rickroll
-          isPlaying: false,
-          currentTime: 0,
-          playbackRate: 1
-        }
-      };
-      rooms.set(roomId, room);
-    }
-    const newUser: User = {  // 3. create user object
+  socket.on("create_room", ({ roomId, username }: JoinRoomPayload) => {  // create room
+    if (rooms.has(roomId.trim())) return socket.emit("room_error", "Room ID already exists. Please choose another.");
+    else if (/\s/.test(roomId)) return socket.emit("room_error", "Room ID cannot contain spaces.");  // 1. validation checks
+    const room: Room = {  // 2. create room
+      roomId,
+      participants: [],
+      videoState: {
+        videoId: "",
+        isPlaying: false,
+        currentTime: 0,
+        playbackRate: 1
+      }
+    };
+    rooms.set(roomId, room);
+    const newUser: User = {  // 3. add host
       userId: socket.id,
       username,
-      role: assignedRole
+      role: "Host"
     };
-    room.participants.push(newUser);  // 4. add user to room state
-    socket.join(roomId);  // 5. tell socket.io to put this connection into physical 'room'
-    socket.to(roomId).emit("user_joined", {  // 6. broadcast to others in room that new user joined
-      ...newUser,
-      participants: room.participants
-    });
-    socket.emit("room_joined", {  // 7. send room state and current video state back to new user so they can sync up immediately
+    room.participants.push(newUser);
+    socket.join(roomId);
+    socket.emit("room_joined", {  // 4. send success state
       roomId,
       role: newUser.role,
       participants: room.participants,
       videoState: room.videoState
-    });  // we will expand this to include video state later
+    });
+    console.log(`${username} (${socket.id}) created and joined room ${roomId} as Host`);
+  });
 
-    console.log(`${username} (${socket.id}) joined room ${roomId} as ${assignedRole}`);
+  socket.on("join_room", ({ roomId, username }: JoinRoomPayload) => {  // join existing room
+    const room = rooms.get(roomId);
+    if (!room) return socket.emit("room_error", "Room not found. Please check the ID and try again.");  // 1. validation check
+    const newUser: User = {  // 2. add participant
+      userId: socket.id,
+      username,
+      role: "Participant"
+    };
+    room.participants.push(newUser);
+    socket.join(roomId);
+    socket.to(roomId).emit("user_joined", {  // 3. broadcast to others and send state to new user
+      ...newUser,
+      participants: room.participants
+    });
+    socket.emit("room_joined", {
+      roomId,
+      role: newUser.role,
+      participants: room.participants,
+      videoState: room.videoState
+    });
+    console.log(`${username} (${socket.id}) joined room ${roomId} as Participant`);
   });
 
   socket.on("play", ({ time }: { time: number }) => {
@@ -107,7 +123,7 @@ io.on("connection", (socket: Socket) => {
     if (!data || !hasControlPermissions(data.user.role)) return;
     data.room.videoState = {  // reset state for new video
       videoId,
-      isPlaying: true,  // auto-play new video
+      isPlaying: false,  // always starts paused
       currentTime: 0,
       playbackRate: 1
     };
@@ -119,6 +135,49 @@ io.on("connection", (socket: Socket) => {
     if (!data || !hasControlPermissions(data.user.role)) return;
     data.room.videoState.playbackRate = rate;
     socket.to(data.room.roomId).emit("rate_change", { rate });
+  });
+
+  socket.on("assign_role", ({ userId, role }: { userId: string, role: Role }) => {
+    const data = getRoomAndUser(socket.id);
+    if (!data || data.user.role !== "Host") return;  // validate: only host can assign roles
+    const targetUser = data.room.participants.find(p => p.userId === userId);
+    if (targetUser) {
+      targetUser.role = role;
+      io.in(data.room.roomId).emit("role_assigned", {  // broadcast updated participant list
+        userId,
+        username: targetUser.username,
+        role,
+        participants: data.room.participants
+      });
+    }
+  });
+
+  socket.on("remove_participant", ({ userId }: { userId: string }) => {
+    const data = getRoomAndUser(socket.id);
+    if (!data || data.user.role !== "Host") return;  // validate: only Host can remove people
+    const userIndex = data.room.participants.findIndex(p => p.userId === userId);
+    if (userIndex !== -1) {
+      data.room.participants.splice(userIndex, 1);  // remove user from our state
+      io.in(data.room.roomId).emit("participant_removed", {  // notify remaining users
+        userId,
+        participants: data.room.participants
+      });
+      const targetSocket = io.sockets.sockets.get(userId);  // target specific user's socket to kick them out
+      if (targetSocket) {
+        targetSocket.leave(data.room.roomId);
+        targetSocket.emit("kicked");  // tell their frontend they were booted
+      }
+    }
+  });
+
+  socket.on("sync_heartbeat", (state: { time: number, isPlaying: boolean, rate: number }) => {
+    const data = getRoomAndUser(socket.id);
+    if (!data || data.user.role !== "Host") return;  // security check: only host can dictate true time
+    data.room.videoState.currentTime = state.time;  // update the server's absolute source of truth
+    data.room.videoState.isPlaying = state.isPlaying;
+    data.room.videoState.playbackRate = state.rate;
+    socket.to(data.room.roomId).emit("host_heartbeat", state);  // broadcast host's exact reality to everyone else
+    // console.log("host pulse received");
   });
 
   socket.on("disconnect", () => {  // leave room
