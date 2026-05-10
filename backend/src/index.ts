@@ -152,6 +152,22 @@ io.on("connection", (socket: Socket) => {
     }
   });
 
+  socket.on("transfer_host", ({ newHostId }: { newHostId: string }) => {
+    const data = getRoomAndUser(socket.id);
+    if (!data || data.user.role !== "Host") return;  // validate: only current host can transfer host powers
+    const { room, user: oldHost } = data;
+    const newHost = room.participants.find(p => p.userId === newHostId);
+    if (newHost) {  // 1. swap roles in server state
+      newHost.role = "Host";
+      oldHost.role = "Moderator";
+      io.in(room.roomId).emit("host_transferred", {  // broadcast transfer to everyone
+        newHostId,
+        oldHostId: oldHost.userId,
+        participants: room.participants
+      });
+    }
+  });
+
   socket.on("remove_participant", ({ userId }: { userId: string }) => {
     const data = getRoomAndUser(socket.id);
     if (!data || data.user.role !== "Host") return;  // validate: only Host can remove people
