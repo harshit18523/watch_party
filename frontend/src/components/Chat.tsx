@@ -6,10 +6,11 @@ import type { ChatMessage } from "../types";
 
 interface ChatProps {
   socket: Socket;
+  initialMessages: ChatMessage[];
 }
 
-export default function Chat({ socket }: ChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export default function Chat({ socket, initialMessages }: ChatProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages || []);
   const [chatInput, setChatInput] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

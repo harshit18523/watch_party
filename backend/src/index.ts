@@ -9,7 +9,6 @@ import cors from "cors";
 import { Server, Socket } from "socket.io";
 
 import type { Role, User, Room, JoinRoomPayload, SeekPayload, ChangeVideoPayload, RateChangePayload, ChatMessage } from "./types.js";
-import { join } from "path";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -48,6 +47,7 @@ io.on("connection", (socket: Socket) => {
     const room: Room = {  // 2. create room
       roomId,
       participants: [],
+      messages: [],
       videoState: {
         videoId: "",
         isPlaying: false,
@@ -67,6 +67,7 @@ io.on("connection", (socket: Socket) => {
       roomId,
       role: newUser.role,
       participants: room.participants,
+      messages: room.messages,
       videoState: room.videoState
     });
     console.log(`${username} (${socket.id}) created and joined room ${roomId} as Host`);
@@ -90,6 +91,7 @@ io.on("connection", (socket: Socket) => {
       roomId,
       role: newUser.role,
       participants: room.participants,
+      messages: room.messages,
       videoState: room.videoState
     });
     console.log(`${username} (${socket.id}) joined room ${roomId} as Participant`);
@@ -206,6 +208,10 @@ io.on("connection", (socket: Socket) => {
       text,
       timestamp: Date.now()
     };
+    data.room.messages.push(message);  // save it to server's memory
+    if (data.room.messages.length > 100) {
+      data.room.messages.shift();  // prevent memory leaks by capping history at 100 messages
+    }
     io.in(data.room.roomId).emit("recieve_message", message);  // broadcast to everyone in room including the sender, so their ui updates
   });
 

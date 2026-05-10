@@ -9,6 +9,7 @@ interface User {
 interface Room {
   roomId: string;
   participants: User[];  // will add video sttate later
+  messages: ChatMessage[];
   videoState: {  // to keep track of what is currently playing
     videoId: string;  // yt video id
     isPlaying: boolean;

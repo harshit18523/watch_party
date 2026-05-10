@@ -17,6 +17,7 @@ interface RoomState {
   roomId: string;
   role: Role;
   participants: User[];
+  messages: ChatMessage[];
   videoState: VideoState;
 }
 

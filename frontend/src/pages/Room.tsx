@@ -191,7 +191,7 @@ export default function Room() {
           <div className="p-4 border-b border-gray-700 bg-gray-900/50 shrink-0">
             <h3 className="font-semibold text-gray-200">Live Chat</h3>
           </div>
-          <Chat socket={socket} />
+          <Chat socket={socket} initialMessages={room.messages} />
         </div>
 
       </div>
