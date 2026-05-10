@@ -180,6 +180,41 @@ io.on("connection", (socket: Socket) => {
     // console.log("host pulse received");
   });
 
+  socket.on("leave_room", () => {
+    const data = getRoomAndUser(socket.id);
+    if (!data) return;
+    const { room, user } = data;
+    const userIndex = room.participants.findIndex(p => p.userId === user.userId);
+    if (userIndex !== -1) {
+      room.participants.splice(userIndex, 1);  // 1. remove user from our state
+      socket.leave(room.roomId);  // 2. unsubscribe socket from room channel
+      socket.to(room.roomId).emit("user_left", {  // 3. notify remaining participants
+        userId: user.userId,
+        participants: room.participants
+      });
+      if (room.participants.length === 0) {  // 4. garbage collection: if last person leaves, destroy room
+        rooms.delete(room.roomId);
+        console.log(`Room ${room.roomId} deleted (empty)`);
+      }
+    }
+  });
+
+  socket.on("delete_room", () => {
+    const data = getRoomAndUser(socket.id);
+    if (!data || data.user.role !== "Host") return;  // security: only host can nuke room
+    const { room } = data;
+    io.in(room.roomId).emit("room_deleted");  // 1. tell everyone's frontend that room is gone
+    const socketsInRoom = io.sockets.adapter.rooms.get(room.roomId);  // 2. force all connected sockets to leave physical room channel
+    if (socketsInRoom) {
+      for (const socketId of socketsInRoom) {
+        const clientSocket = io.sockets.sockets.get(socketId);
+        if (clientSocket) clientSocket.leave(room.roomId);
+      }
+    }
+    rooms.delete(room.roomId);  // 3. delete room from server memory
+    console.log(`Room ${room.roomId} deleted by Host`);
+  });
+
   socket.on("disconnect", () => {  // leave room
     console.log(`User disconnected: ${socket.id}`);
 

@@ -44,14 +44,31 @@ export default function Room() {
       navigate("/join");
     });
 
+    socket.on("room_deleted", () => {
+      alert("The Host has ended the Watch Party.");
+      navigate('/join');
+    });
+
     return () => {
       socket.off("user_joined");
       socket.off("user_left");
       socket.off("role_assigned");
       socket.off("participant_removed");
       socket.off("kicked");
+      socket.off("room_deleted");
     };
   }, [navigate, room, roomId]);
+
+  const handleLeaveRoom = () => {
+    socket.emit("leave_room");
+    navigate("/join");  // send them back to lobby
+  };
+
+  const handleDeleteRoom = () => {  // add quick confirmation so host doesnt accidentally click it
+    if (window.confirm("Are you sure you want to end the Watch Party for everyone?")) {
+      socket.emit("delete_room");
+    }
+  };
 
   const handleToggleModerator = (userId: string, currentRole: Role) => {
     const newRole = currentRole === "Moderator" ? "Participant" : "Moderator";
@@ -119,6 +136,25 @@ export default function Room() {
             </li>
           ))}
         </ul>
+
+        {/* EXIT CONTROLS */}
+        <div className="mt-auto border-t border-gray-700 pt-4 flex flex-col gap-2">
+          <button
+            onClick={handleLeaveRoom}
+            className="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
+            Leave Room
+          </button>
+
+          {room.role === 'Host' && (
+            <button
+              onClick={handleDeleteRoom}
+              className="w-full bg-red-600/80 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors border border-red-500"
+            >
+              End Watch Party
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
