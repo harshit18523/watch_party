@@ -44,7 +44,7 @@ export default function CreateRoom() {
         </form>
 
         <p className="mt-4 text-center text-gray-400">
-          Already have a room? <Link to="/join" className="text-blue-400 hover:underline">Join here</Link>
+          Wanna join an existing room? <Link to="/join" className="text-blue-400 hover:underline">Join here</Link>
         </p>
       </div>
     </div>

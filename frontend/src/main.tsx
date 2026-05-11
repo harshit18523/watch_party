@@ -1,9 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router";
+import { createBrowserRouter, RouterProvider } from "react-router";
 
 import './index.css';
-// import App from './App.tsx';
+import App from './App.tsx';
 import JoinRoom from './pages/JoinRoom.tsx';
 import CreateRoom from './pages/CreateRoom.tsx';
 import Room from './pages/Room.tsx';
@@ -11,7 +11,7 @@ import Room from './pages/Room.tsx';
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to={"/join"} replace />,
+    element: <App />,
   },
   {
     path: "/join",
