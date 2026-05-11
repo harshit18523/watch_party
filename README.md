@@ -1,8 +1,10 @@
 # watch_party
 
-#### A Watch Party system that allows multiple users to watch YouTube videos together in real time. Users should be synchronized—when one person pauses, seeks, or changes the video, everyone in the party sees the same action.
+#### A Watch Party system that allows multiple users to watch YouTube videos together in real time.
 
 * This app is deployed [here (live link)](https://watch-party-ivory-chi.vercel.app)
+
+* Refer my [Medium story](https://medium.com/@harshitpareek241/building-a-real-time-watch-party-app-architecture-and-code-walkthrough-13b55a6c3618) for more details about the working of my application
 
 ## Setup and Run Instructions to use locally
 
