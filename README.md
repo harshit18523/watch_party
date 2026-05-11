@@ -12,21 +12,21 @@
 - **Frontend:** Vite, React.js, react-router, lucide-react, tailwindcss, react-youtube
 
 ## Features
-- Real Time Synchronization using web sockets
-- Video play/pause, seek and playback is synchronized across all participants
-- Hybrid Video Synchronization (both event based and polling)
+- Real-time Synchronization using WebSockets
+- Video play/pause, seek, and playback speed are synchronized across all participants
+- Hybrid Video Synchronization (both event-based and polling)
 - Room-based model (there can be multiple rooms)
 - Role-based access -> [Host, Moderator, Participant]
 - Persistent Chat in each room (new user also sees the previous chat)
 - Floating emoji reactions
-- Host can lock/unlock the room. Nobody can enter in a locked room 
+- Host can lock/unlock the room. Nobody can enter a locked room 
 
 ## Working
-- To create a room, user needs to enter name and create a unique room id
-- To join an existing room, user has to enter name and room id of the room it wants to join
-- A user can also join an existing room by the link shared by participants
-- Host has the power to play/pause, seek video, change video, transfer host and delete the room and lock the room
-- Moderator has the powers to play/pause seek and change video
+- To create a room, a user needs to enter their name and create a unique room ID.
+- To join an existing room, a user has to enter their name and the room ID of the room they want to join.
+- A user can also join an existing room via a link shared by participants.
+- The Host has the power to play/pause, seek the video, change the video, transfer Host privileges, delete the room, and lock/unlock the room.
+- A Moderator has the power to play/pause, seek, and change the video.
 
 
 ## Setup and Run Instructions to use locally
