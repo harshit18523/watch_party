@@ -19,7 +19,7 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*",  // we will restrict this in production
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     methods: ["GET", "POST"]
   }
 });
@@ -292,5 +292,5 @@ io.on("connection", (socket: Socket) => {
 });
 
 server.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on port ${port}`);
 });
