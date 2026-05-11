@@ -53,12 +53,12 @@ export default function Room() {
 
     socket.on("kicked", () => {
       alert("You have been removed from the room by the Host.");
-      navigate("/join");
+      navigate("/", { replace: true });
     });
 
     socket.on("room_deleted", () => {
       alert("The Host has ended the Watch Party.");
-      navigate('/join');
+      navigate("/", { replace: true });
     });
 
     socket.on("room_locked_state", ({ isLocked }) => {
@@ -79,7 +79,7 @@ export default function Room() {
 
   const handleLeaveRoom = () => {
     socket.emit("leave_room");
-    navigate("/join");  // send them back to lobby
+    navigate("/", { replace: true });  // send them back to lobby
   };
 
   const handleDeleteRoom = () => {  // add quick confirmation so host doesnt accidentally click it
