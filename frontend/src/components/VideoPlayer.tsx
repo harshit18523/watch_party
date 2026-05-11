@@ -159,7 +159,7 @@ export default function VideoPlayer({ socket, room }: VideoPlayerProps) {
       extractedId = videoInput.split("v=")[1].substring(0, 11);
     } else if (videoInput.includes("youtu.be/")) {
       extractedId = videoInput.split("youtu.be/")[1].substring(0, 11);
-    }
+    } else return;
     socket.emit("change_video", { videoId: extractedId });
     setVideoInput("");
   };

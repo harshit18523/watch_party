@@ -119,18 +119,18 @@ export default function Room() {
   if (!room) return (<div className="text-white text-center mt-20">Loading room data...</div>);
 
   return (
-    <div className="h-screen max-h-screen overflow-hidden bg-gray-900 text-white flex flex-col">
+    <div className="h-screen bg-gray-900 text-white flex flex-col overflow-hidden">
 
       {/* 1. TOP NAV BAR: Room Name & Exit Controls */}
-      <header className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center shrink-0 shadow-md z-10">
-        <div className="flex items-center gap-3">
-          <h1 className="font-bold text-xl flex items-center gap-2">
-            <span className="text-blue-500">▶</span> Watch Party: {room.roomId}
+      <header className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center shrink-0 shadow-md z-10 overflow-x-auto">
+        <div className="flex items-center gap-3 pr-4">
+          <h1 className="font-bold text-lg md:text-xl flex items-center gap-2 whitespace-nowrap">
+            <span className="text-blue-500">▶</span> Room ID: {room.roomId}
           </h1>
           <button
             onClick={handleCopyLink}
             title="Copy Invite Link"
-            className="flex items-center gap-1.5 px-2 py-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-sm text-gray-300 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-xs md:text-sm text-gray-300 hover:text-white transition-colors"
           >
             {copied ? (
               <>
@@ -146,25 +146,26 @@ export default function Room() {
           </button>
         </div>
         
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-2 items-center">
           
           {/* --- ROOM LOCK UI --- */}
           {room.role === 'Host' ? (
             <button 
               onClick={handleToggleLock}
-              className={`flex items-center gap-2 text-sm font-medium py-2 px-4 rounded-lg transition-colors border ${
+              className={`flex items-center gap-1 text-xs md:text-sm font-medium py-1.5 px-3 rounded-lg transition-colors border whitespace-nowrap ${
                 room.isLocked 
                   ? 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-700' 
                   : 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600'
               }`}
             >
               {room.isLocked ? <Lock size={16} /> : <Unlock size={16} />}
-              {room.isLocked ? 'Room Locked' : 'Room Unlocked'}
+              <span className="hidden md:inline">{room.isLocked ? 'Locked' : 'Unlocked'}</span>
             </button>
           ) : (
             room.isLocked && (
-              <span className="flex items-center gap-1 text-sm font-medium text-red-400 px-3 py-2 bg-red-900/20 rounded-lg border border-red-900/50">
-                <Lock size={14} /> Locked
+              <span className="flex items-center gap-1 text-xs md:text-sm font-medium text-red-400 px-2 py-1.5 bg-red-900/20 rounded-lg border border-red-900/50">
+                <Lock size={14} />
+                <span className="hidden md:inline">Locked</span>
               </span>
             )
           )}
@@ -172,7 +173,7 @@ export default function Room() {
 
           <button 
             onClick={handleLeaveRoom}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors border border-gray-600 ml-2"
+            className="bg-gray-700 hover:bg-gray-600 text-white text-xs md:text-sm font-medium py-1.5 px-3 rounded-lg transition-colors border border-gray-600 whitespace-nowrap"
           >
             Leave Room
           </button>
@@ -180,7 +181,7 @@ export default function Room() {
           {room.role === 'Host' && (
             <button 
               onClick={handleDeleteRoom}
-              className="bg-red-600/80 hover:bg-red-600 text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors border border-red-500"
+              className="bg-red-600/80 hover:bg-red-600 text-white text-xs md:text-sm font-bold py-1.5 px-3 rounded-lg transition-colors border border-red-500 whitespace-nowrap"
             >
               End Party
             </button>
@@ -189,11 +190,11 @@ export default function Room() {
       </header>
 
       {/* 2. MAIN CONTENT AREA: 3-Column Layout */}
-      <div className="flex-1 overflow-hidden p-4 flex flex-col lg:flex-row gap-4">
+      <div className="flex-1 overflow-y-auto lg:overflow-hidden p-4 flex flex-col lg:flex-row gap-4 custom-scrollbar">
 
         {/* COLUMN 1: Participants Sidebar (Left) */}
-        <div className="w-full lg:w-64 h-full bg-gray-800 rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-2xl shrink-0">
-          <div className="p-4 border-b border-gray-700 bg-gray-900/50 shrink-0">
+        <div className="order-3 lg:order-1 w-full lg:w-64 h-75 lg:h-full bg-gray-800 rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-2xl shrink-0">
+          <div className="p-3 md:p-4 border-b border-gray-700 bg-gray-900/50 shrink-0">
             <h3 className="font-semibold flex items-center gap-2 text-gray-200">
               <Users size={18} className="text-blue-400" /> Participants ({room.participants.length})
             </h3>
@@ -244,9 +245,9 @@ export default function Room() {
 
         {/* COLUMN 2: Video Player (Center) */}
         {/* We use flex-1 here so the video always takes up the maximum remaining space */}
-        <div className="flex-1 flex flex-col gap-4 h-full min-w-[320px]">
+        <div className="order-1 lg:order-2 w-full lg:flex-1 flex flex-col gap-4 lg:h-full min-w-0">
           
-          <div className="w-full rounded-xl overflow-hidden shadow-2xl bg-black border border-gray-700 shrink-0">
+          <div className="w-full rounded-xl overflow-hidden shadow-2xl bg-black border border-gray-700 relative">
             <VideoPlayer socket={socket} room={room} />
           </div>
 
@@ -256,8 +257,8 @@ export default function Room() {
         </div>
 
         {/* COLUMN 3: Chat Sidebar (Right) */}
-        <div className="w-full lg:w-80 h-full bg-gray-800 rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-2xl shrink-0">
-          <div className="p-4 border-b border-gray-700 bg-gray-900/50 shrink-0">
+        <div className="order-2 lg:order-3 w-full lg:w-80 h-100 lg:h-full bg-gray-800 rounded-xl border border-gray-700 flex flex-col overflow-hidden shadow-2xl shrink-0">
+          <div className="p-3 md:p-4 border-b border-gray-700 bg-gray-900/50 shrink-0">
             <h3 className="font-semibold text-gray-200">Live Chat</h3>
           </div>
           <Chat socket={socket} initialMessages={room.messages} />
