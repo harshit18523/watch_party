@@ -46,6 +46,7 @@ io.on("connection", (socket: Socket) => {
     else if (/\s/.test(roomId)) return socket.emit("room_error", "Room ID cannot contain spaces.");  // 1. validation checks
     const room: Room = {  // 2. create room
       roomId,
+      isLocked: false,
       participants: [],
       messages: [],
       videoState: {
@@ -76,6 +77,7 @@ io.on("connection", (socket: Socket) => {
   socket.on("join_room", ({ roomId, username }: JoinRoomPayload) => {  // join existing room
     const room = rooms.get(roomId);
     if (!room) return socket.emit("room_error", "Room not found. Please check the ID and try again.");  // 1. validation check
+    else if (room.isLocked) return socket.emit("room_error", "The Host has locked this room. No new participants can join.");  // block entry if locked
     const newUser: User = {  // 2. add participant
       userId: socket.id,
       username,
@@ -213,6 +215,13 @@ io.on("connection", (socket: Socket) => {
       data.room.messages.shift();  // prevent memory leaks by capping history at 100 messages
     }
     io.in(data.room.roomId).emit("recieve_message", message);  // broadcast to everyone in room including the sender, so their ui updates
+  });
+
+  socket.on("toggle_lock", ({ isLocked }: { isLocked: boolean }) => {
+    const data = getRoomAndUser(socket.id);
+    if (!data || data.user.role !== "Host") return;  // security: only host can lock/unlock room
+    data.room.isLocked = isLocked;
+    io.in(data.room.roomId).emit("room_locked_state", { isLocked });  // broadcast new lock state to everyone in room
   });
 
   socket.on("leave_room", () => {

@@ -16,6 +16,7 @@ interface VideoState {
 interface RoomState {
   roomId: string;
   role: Role;
+  isLocked: boolean;
   participants: User[];
   messages: ChatMessage[];
   videoState: VideoState;

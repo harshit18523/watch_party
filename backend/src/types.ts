@@ -8,6 +8,7 @@ interface User {
 
 interface Room {
   roomId: string;
+  isLocked: boolean;
   participants: User[];  // will add video sttate later
   messages: ChatMessage[];
   videoState: {  // to keep track of what is currently playing

@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
-import { Users } from "lucide-react";
+import { Users, Lock, Unlock } from "lucide-react";
 
 import type { Role, RoomState, User } from "../types";
 import { socket } from "../socket";
@@ -59,6 +59,10 @@ export default function Room() {
       navigate('/join');
     });
 
+    socket.on("room_locked_state", ({ isLocked }) => {
+      setRoom(prev => prev ? { ...prev, isLocked } : null);
+    });
+
     return () => {
       socket.off("user_joined");
       socket.off("user_left");
@@ -67,6 +71,7 @@ export default function Room() {
       socket.off("participant_removed");
       socket.off("kicked");
       socket.off("room_deleted");
+      socket.off("room_locked_state");
     };
   }, [navigate, room, roomId]);
 
@@ -96,6 +101,12 @@ export default function Room() {
     }
   };
 
+  const handleToggleLock = () => {
+    if (room) {
+      socket.emit("toggle_lock", { isLocked: !room.isLocked });
+    }
+  };
+
   if (!room) return (<div className="text-white text-center mt-20">Loading room data...</div>);
 
   return (
@@ -106,17 +117,40 @@ export default function Room() {
         <h1 className="font-bold text-xl flex items-center gap-2">
           <span className="text-blue-500">▶</span> Watch Party: {room.roomId}
         </h1>
+        
+        <div className="flex gap-3 items-center">
+          
+          {/* --- ROOM LOCK UI --- */}
+          {room.role === 'Host' ? (
+            <button 
+              onClick={handleToggleLock}
+              className={`flex items-center gap-2 text-sm font-medium py-2 px-4 rounded-lg transition-colors border ${
+                room.isLocked 
+                  ? 'bg-red-900/50 hover:bg-red-900 text-red-200 border-red-700' 
+                  : 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600'
+              }`}
+            >
+              {room.isLocked ? <Lock size={16} /> : <Unlock size={16} />}
+              {room.isLocked ? 'Room Locked' : 'Room Unlocked'}
+            </button>
+          ) : (
+            room.isLocked && (
+              <span className="flex items-center gap-1 text-sm font-medium text-red-400 px-3 py-2 bg-red-900/20 rounded-lg border border-red-900/50">
+                <Lock size={14} /> Locked
+              </span>
+            )
+          )}
+          {/* ------------------ */}
 
-        <div className="flex gap-3">
-          <button
+          <button 
             onClick={handleLeaveRoom}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors border border-gray-600"
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors border border-gray-600 ml-2"
           >
             Leave Room
           </button>
-
+          
           {room.role === 'Host' && (
-            <button
+            <button 
               onClick={handleDeleteRoom}
               className="bg-red-600/80 hover:bg-red-600 text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors border border-red-500"
             >
