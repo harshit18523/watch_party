@@ -115,3 +115,18 @@ code {
 body {
   @apply bg-gray-900 text-white;
 }
+
+@keyframes floatUp {
+  0% { 
+    transform: translateY(0) scale(1); 
+    opacity: 1; 
+  }
+  100% { 
+    transform: translateY(-200px) scale(1.5); 
+    opacity: 0; 
+  }
+}
+
+.animate-float-up {
+  animation: floatUp 2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

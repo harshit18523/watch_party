@@ -217,6 +217,15 @@ io.on("connection", (socket: Socket) => {
     io.in(data.room.roomId).emit("recieve_message", message);  // broadcast to everyone in room including the sender, so their ui updates
   });
 
+  socket.on("send_reaction", ({ emoji }: { emoji: string }) => {
+    const data = getRoomAndUser(socket.id);
+    if (!data) return;
+    io.in(data.room.roomId).emit("recieve_reaction", {  // We broadcast instantly. no need to save to room's memory
+      id: Math.random().toString(36).substring(2, 9),  // unique id for react rendering
+      emoji
+    });
+  });
+
   socket.on("toggle_lock", ({ isLocked }: { isLocked: boolean }) => {
     const data = getRoomAndUser(socket.id);
     if (!data || data.user.role !== "Host") return;  // security: only host can lock/unlock room

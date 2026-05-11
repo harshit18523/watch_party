@@ -4,6 +4,7 @@ import YouTube, { type YouTubePlayer, type YouTubeEvent } from "react-youtube";
 import { Search } from "lucide-react";
 
 import type { RoomState } from "../types";
+import ReactionOverlay from "./ReactionOverlay";
 
 interface VideoPlayerProps {
   socket: Socket;
@@ -212,6 +213,8 @@ export default function VideoPlayer({ socket, room }: VideoPlayerProps) {
             </p>
           </div>
         )}
+
+        <ReactionOverlay socket={socket} />
       </div>
 
       {/* Change Video Controls (Host/Mod Only) */}

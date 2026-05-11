@@ -6,6 +6,7 @@ import type { Role, RoomState, User } from "../types";
 import { socket } from "../socket";
 import VideoPlayer from "../components/VideoPlayer";
 import Chat from "../components/Chat";
+import ReactionBar from "../components/ReactionBar";
 
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -216,8 +217,15 @@ export default function Room() {
 
         {/* COLUMN 2: Video Player (Center) */}
         {/* We use flex-1 here so the video always takes up the maximum remaining space */}
-        <div className="flex-1 h-full rounded-xl overflow-hidden shadow-2xl bg-black min-w-[320px] border border-gray-700">
-          <VideoPlayer socket={socket} room={room} />
+        <div className="flex-1 flex flex-col gap-4 h-full min-w-[320px]">
+          
+          <div className="w-full rounded-xl overflow-hidden shadow-2xl bg-black border border-gray-700 shrink-0">
+            <VideoPlayer socket={socket} room={room} />
+          </div>
+
+          {/* Cleanly imported Reaction Bar! */}
+          <ReactionBar socket={socket} />
+
         </div>
 
         {/* COLUMN 3: Chat Sidebar (Right) */}
