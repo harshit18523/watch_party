@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
-import { Users, Lock, Unlock } from "lucide-react";
+import { Users, Lock, Unlock, Copy, Check } from "lucide-react";
 
 import type { Role, RoomState, User } from "../types";
 import { socket } from "../socket";
@@ -13,6 +13,7 @@ export default function Room() {
   const navigate = useNavigate();
   const location = useLocation();
   const [room, setRoom] = useState<RoomState | null>(location.state?.roomData || null);  // initialize state from router history if we just navigated here from create/join
+  const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
     if (!room) {  // pass roomId from url back to join page
@@ -102,6 +103,13 @@ export default function Room() {
     }
   };
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {  // copies full current url
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);  // reset icon back to 'Copy' after 2 seconds
+    });
+  };
+
   const handleToggleLock = () => {
     if (room) {
       socket.emit("toggle_lock", { isLocked: !room.isLocked });
@@ -115,9 +123,28 @@ export default function Room() {
 
       {/* 1. TOP NAV BAR: Room Name & Exit Controls */}
       <header className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center shrink-0 shadow-md z-10">
-        <h1 className="font-bold text-xl flex items-center gap-2">
-          <span className="text-blue-500">▶</span> Watch Party: {room.roomId}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="font-bold text-xl flex items-center gap-2">
+            <span className="text-blue-500">▶</span> Watch Party: {room.roomId}
+          </h1>
+          <button
+            onClick={handleCopyLink}
+            title="Copy Invite Link"
+            className="flex items-center gap-1.5 px-2 py-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-sm text-gray-300 hover:text-white transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check size={14} className="text-green-400" />
+                <span className="text-green-400 font-medium">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy size={14} />
+                <span>Copy Link</span>
+              </>
+            )}
+          </button>
+        </div>
         
         <div className="flex gap-3 items-center">
           
