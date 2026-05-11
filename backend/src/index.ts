@@ -39,7 +39,7 @@ function hasControlPermissions(role: Role): boolean {
 }
 
 io.on("connection", (socket: Socket) => {
-  console.log(`User connected: ${socket.id}`);
+  // console.log(`User connected: ${socket.id}`);
 
   socket.on("create_room", ({ roomId, username }: JoinRoomPayload) => {  // create room
     if (rooms.has(roomId.trim())) return socket.emit("room_error", "Room ID already exists. Please choose another.");
@@ -71,7 +71,7 @@ io.on("connection", (socket: Socket) => {
       messages: room.messages,
       videoState: room.videoState
     });
-    console.log(`${username} (${socket.id}) created and joined room ${roomId} as Host`);
+    // console.log(`${username} (${socket.id}) created and joined room ${roomId} as Host`);
   });
 
   socket.on("join_room", ({ roomId, username }: JoinRoomPayload) => {  // join existing room
@@ -96,7 +96,7 @@ io.on("connection", (socket: Socket) => {
       messages: room.messages,
       videoState: room.videoState
     });
-    console.log(`${username} (${socket.id}) joined room ${roomId} as Participant`);
+    // console.log(`${username} (${socket.id}) joined room ${roomId} as Participant`);
   });
 
   socket.on("play", ({ time }: { time: number }) => {
@@ -247,7 +247,7 @@ io.on("connection", (socket: Socket) => {
       });
       if (room.participants.length === 0) {  // 4. garbage collection: if last person leaves, destroy room
         rooms.delete(room.roomId);
-        console.log(`Room ${room.roomId} deleted (empty)`);
+        // console.log(`Room ${room.roomId} deleted (empty)`);
       }
     }
   });
@@ -265,11 +265,11 @@ io.on("connection", (socket: Socket) => {
       }
     }
     rooms.delete(room.roomId);  // 3. delete room from server memory
-    console.log(`Room ${room.roomId} deleted by Host`);
+    // console.log(`Room ${room.roomId} deleted by Host`);
   });
 
   socket.on("disconnect", () => {  // leave room
-    console.log(`User disconnected: ${socket.id}`);
+    // console.log(`User disconnected: ${socket.id}`);
 
     for (const [roomId, room] of rooms.entries()) {  // find which room this user was in and remove them
       const userIndex = room.participants.findIndex(p => p.userId === socket.id);
@@ -283,7 +283,7 @@ io.on("connection", (socket: Socket) => {
         if (room.participants.length === 0) {  // if room is empty, clean it up to prevent memory leaks
           rooms.delete(roomId);
 
-          console.log(`Room ${roomId} deleted (empty)`);
+          // console.log(`Room ${roomId} deleted (empty)`);
         }
         break;  // socket is only in one room at a time in our app
       }
