@@ -19,9 +19,9 @@ export default function Room() {
     if (!room) {  // pass roomId from url back to join page
       navigate("/join", { state: { prefillRoomId: roomId } });
       return;
-    } else if (!socket.connected) {
-      navigate("/", { replace: true });
-    }
+    } //else if (!socket.connected) {
+    //   navigate("/", { replace: true });
+    // }
 
     socket.on("user_joined", (newUser: User & { participants: User[] }) => {
       setRoom(prev => prev ? { ...prev, participants: newUser.participants } : null);
