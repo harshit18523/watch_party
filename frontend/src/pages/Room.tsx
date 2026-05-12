@@ -16,12 +16,11 @@ export default function Room() {
   const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!socket.connected) {
-      navigate("/", { replace: true });
-    }
-    else if (!room) {  // pass roomId from url back to join page
+    if (!room) {  // pass roomId from url back to join page
       navigate("/join", { state: { prefillRoomId: roomId } });
       return;
+    } else if (!socket.connected) {
+      navigate("/", { replace: true });
     }
 
     socket.on("user_joined", (newUser: User & { participants: User[] }) => {
