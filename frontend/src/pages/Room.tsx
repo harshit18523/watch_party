@@ -16,7 +16,10 @@ export default function Room() {
   const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!room) {  // pass roomId from url back to join page
+    if (!socket.connected) {
+      navigate("/", { replace: true });
+    }
+    else if (!room) {  // pass roomId from url back to join page
       navigate("/join", { state: { prefillRoomId: roomId } });
       return;
     }
@@ -75,7 +78,7 @@ export default function Room() {
       socket.off("room_deleted");
       socket.off("room_locked_state");
     };
-  }, [navigate, room, roomId]);
+  }, [socket.connected, navigate, room, roomId]);
 
   const handleLeaveRoom = () => {
     socket.emit("leave_room");
