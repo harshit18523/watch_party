@@ -37,7 +37,7 @@ export default function JoinRoom() {
         {error && <div className="bg-red-500/20 border border-red-500 text-red-400 p-3 rounded-lg mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="name" className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white" />
+          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Your name" className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white" />
           <input type="text" value={roomId} onChange={(e) => setRoomId(e.target.value)} placeholder="ID of Room you want to join" className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white" />
           <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Join Room</button>
         </form>
