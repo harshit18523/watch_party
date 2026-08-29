@@ -291,6 +291,13 @@ io.on("connection", (socket: Socket) => {
   });
 });
 
+app.get("/delete-all-rooms", (req, res) => {
+  rooms.clear();
+  res.status(200).json({
+    message: "In-memory hash map is empty now"
+  });
+});
+
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
