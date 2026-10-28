@@ -25,7 +25,7 @@ export default function Home() {
           Host a virtual movie night, chat, and react together no matter where you are.
         </p>
         {/* remove it */}
-        <img src="/images.jpeg" alt="Hero Image" className="mt-8 rounded-xl shadow-lg" />
+        {/* <img src="/images.jpeg" alt="Hero Image" className="mt-8 rounded-xl shadow-lg" /> */}
         
       </div>
 
